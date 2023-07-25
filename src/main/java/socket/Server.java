@@ -43,9 +43,11 @@ public class Server {
 
     private class ClientHandler implements Runnable {
         private Socket socket;
+        private String host;
 
         public ClientHandler(Socket socket) {
             this.socket = socket;
+            this.host = socket.getInetAddress().getHostAddress();
         }
 
         public void run() {
@@ -56,7 +58,7 @@ public class Server {
 
                 String line;
                 while ((line = br.readLine()) != null) {
-                    System.out.println("客户端说: " + line);
+                    System.out.println(host + "说: " + line);
                 }
             } catch (IOException e) {
                 e.printStackTrace();
