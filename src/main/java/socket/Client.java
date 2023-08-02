@@ -21,11 +21,16 @@ public class Client {
 
     public void start() {
         try {
-            OutputStream out = socket.getOutputStream();
-            OutputStreamWriter osw = new OutputStreamWriter(out, StandardCharsets.UTF_8);
-            BufferedWriter bw = new BufferedWriter(osw);
-            PrintWriter pw = new PrintWriter(bw, true);
-
+            ServerHandler serverHandler = new ServerHandler();
+            Thread t = new Thread(serverHandler);
+            t.setDaemon(true);
+            t.start();
+            PrintWriter pw = new PrintWriter(
+                    new BufferedWriter(
+                            new OutputStreamWriter(
+                                    socket.getOutputStream(), StandardCharsets.UTF_8
+                            )
+                    ), true);
             Scanner sc = new Scanner(System.in);
             String line;
             System.out.println("请说");
@@ -47,5 +52,23 @@ public class Client {
     public static void main(String[] args) {
         Client client = new Client();
         client.start();
+    }
+
+    private class ServerHandler implements Runnable {
+        public void run() {
+            try {
+                BufferedReader br = new BufferedReader(
+                        new InputStreamReader(
+                                socket.getInputStream(), StandardCharsets.UTF_8
+                        )
+                );
+                String message;
+                while ((message = br.readLine()) != null) {
+                    System.out.println(message);
+                }
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
     }
 }

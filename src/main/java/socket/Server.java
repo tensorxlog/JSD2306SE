@@ -1,15 +1,15 @@
 package socket;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
 
 public class Server {
     private ServerSocket serverSocket;
+    private List<PrintWriter> allOut = new ArrayList<>();
 
     public Server() {
         try {
@@ -51,19 +51,44 @@ public class Server {
         }
 
         public void run() {
+            PrintWriter pw = null;
             try {
                 InputStream is = socket.getInputStream();
                 InputStreamReader isr = new InputStreamReader(is, StandardCharsets.UTF_8);
                 BufferedReader br = new BufferedReader(isr);
+                pw = new PrintWriter(new BufferedWriter(new OutputStreamWriter(socket.getOutputStream(), StandardCharsets.UTF_8)), true);
+                synchronized (allOut) {
+                    allOut.add(pw);
+                }
+                sendMessage(host + "上线了，当前在线人数：" + allOut.size());
 
                 String line;
                 while ((line = br.readLine()) != null) {
-                    System.out.println(host + "说: " + line);
+                    sendMessage(host + "说：" + line);
                 }
             } catch (IOException e) {
                 e.printStackTrace();
+            } finally {
+                synchronized (allOut) {
+                    allOut.remove(pw);
+                }
+                sendMessage(host + "下线了。当前在线人数：" + allOut.size());
+                try {
+                    socket.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
             }
             System.out.println("客户端结束了会话");
+        }
+
+        private void sendMessage(String message) {
+            System.out.println(message);
+            synchronized (allOut) {
+                for (PrintWriter p: allOut) {
+                    p.println(message);
+                }
+            }
         }
     }
 }
